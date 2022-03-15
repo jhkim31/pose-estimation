@@ -13,6 +13,8 @@ default는 동영상이 실행 됨.
 * --input_data : 입력 데이터 (webcam은 안해도 됨)  
     default : `test_data/test_video.mp4`
     
+webcam으로 할려면  
+`$ python3 pose_estimation.py --input_type webcam`
 
 
 

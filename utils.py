@@ -68,6 +68,7 @@ def visualize(
 ) -> np.ndarray:
   """Draws landmarks and edges on the input image and return it.
 
+
   Args:
     image: The input RGB image.
     list_persons: The list of all "Person" entities to be visualize.

@@ -7,7 +7,7 @@ import time
 from ml import Movenet
 from ml import Posenet
 import post_process
-from fitness_tracking import HealthCoach
+from fitness_tracking import MadPT
 import utils
 
 
@@ -23,7 +23,7 @@ def run(
     frame = None
     save_index = 0
     check_point = time.time()
-    hc = HealthCoach()
+    hc = MadPT()
 
     if estimation_model in ['movenet_lightning', 'movenet_thunder']:
         pose_detector = Movenet(estimation_model)
@@ -72,7 +72,7 @@ def run(
         cv2.imshow(f"{input_type}", total_image)
         save_index += 1
 
-        theta = hc.push_up(list_persons)
+        # fitness_score = hc.push_up(list_persons)
 
     print("terminate!!")
     if save_result:
@@ -89,11 +89,11 @@ def skeleton_pprint(list_persons):
 def main():
     print("종료하려면 ESC")
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_type", help="input type ex) [webcam , video , image]", default="webcam")
-    parser.add_argument("--input_data", help="input data", default='test_data/test_video.mp4')
+    parser.add_argument("--input_type", help="input type ex) [webcam , video , image]", default="video")
+    parser.add_argument("--input_data", help="input data", default='test_data/pull_up.mp4')
     parser.add_argument("--model", help="choose the model ex) [movenet_lightning, movenet_thunder, posenet]",
                         default="movenet_thunder")
-    parser.add_argument("--save_result", help="input data", default="False")
+    parser.add_argument("--save_result", help="input data", default="True")
     args = parser.parse_args()
 
     estimation_model = args.model

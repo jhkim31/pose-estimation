@@ -1,4 +1,5 @@
 **/__pycache__/
 *.tflite
 data/
+test_data/
 .idea/

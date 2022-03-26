@@ -20,8 +20,7 @@ KeyPoint(body_part=<BodyPart.LEFT_ANKLE: 15>, coordinate=Point(x=579, y=701), sc
 KeyPoint(body_part=<BodyPart.RIGHT_ANKLE: 16>, coordinate=Point(x=562, y=690), score=0.035004675)
 '''
 
-
-class HealthCoach():
+class MadPT():
     def __init__(self):
         self.state = 0
         self.count = {
@@ -35,22 +34,26 @@ class HealthCoach():
 
     def push_up(self, list_person):
         body_parts = list_person[0][0]
+        side = "left" if (body_parts[5].score + body_parts[7].score + body_parts[9].score) > \
+                         (body_parts[6].score + body_parts[8].score + body_parts[10].score) else "right"
 
-        if body_parts[5].score > 0.5:
-            left_arm_angle = self.calculate_angle(
-                body_parts[5].coordinate,
-                body_parts[7].coordinate,
-                body_parts[9].coordinate
+        observe_point = (5,7,9) if side == "left" else (6,8,10)
+        if body_parts[observe_point[0]].score + body_parts[observe_point[1]].score + body_parts[observe_point[2]].score > 1:
+            arm_angle = self.calculate_angle(
+                body_parts[observe_point[0]].coordinate,
+                body_parts[observe_point[1]].coordinate,
+                body_parts[observe_point[2]].coordinate
             )
 
-            if left_arm_angle < 110 and self.state == 0:
+            if arm_angle < 110 and self.state == 0:
                 self.state = 1
                 print("down")
 
-            if left_arm_angle > 160 and self.state == 1:
+            if arm_angle > 160 and self.state == 1:
                 self.state = 0
                 print("up")
                 self.count["push_up"] += 1
+
                 print(self.count["push_up"])
                 if self.max_score["push_up"] < 10:
                     print("bad")
@@ -60,19 +63,21 @@ class HealthCoach():
                     print("great")
                 else:
                     print("excellent!!")
-
                 self.max_score["push_up"] = 0
 
-            if left_arm_angle < 110:
-                if self.max_score["push_up"] < 110 - left_arm_angle:
-                    self.max_score["push_up"] = 110 - left_arm_angle
+            if arm_angle < 110:
+                if self.max_score["push_up"] < push_up_score:
+                    self.max_score["push_up"] = push_up_score
+
+        return self.max_score["push_up"]
 
     def calculate_angle(self, p1, p2, p3):
         vector1 = (p1.x - p2.x, p1.y - p2.y)
         vector2 = (p3.x - p2.x, p3.y - p2.y)
 
-        theta = math.acos((vector1[0] * vector2[0] + vector1[1] * vector2[1]) / (
-                math.sqrt(vector1[0] ** 2 + vector1[1] ** 2) * math.sqrt(vector2[0] ** 2 + vector2[1] ** 2) + 1e-5
-        ))
+        theta = math.acos(
+            (vector1[0] * vector2[0] + vector1[1] * vector2[1]) /
+            (math.sqrt(vector1[0] ** 2 + vector1[1] ** 2) * math.sqrt(vector2[0] ** 2 + vector2[1] ** 2) + 1e-5)
+        )
 
         return theta * (180 / math.pi)

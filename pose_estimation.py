@@ -32,6 +32,8 @@ def run(
 
     if input_type != "image":
         capture = cv2.VideoCapture(input_data)
+        capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
     image_list = []
     body_part_list = []
@@ -89,11 +91,11 @@ def skeleton_pprint(list_persons):
 def main():
     print("종료하려면 ESC")
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_type", help="input type ex) [webcam , video , image]", default="video")
-    parser.add_argument("--input_data", help="input data", default='test_data/pull_up.mp4')
+    parser.add_argument("--input_type", help="input type ex) [webcam , video , image]", default="image")
+    parser.add_argument("--input_data", help="input data", default='test_data/img2.png')
     parser.add_argument("--model", help="choose the model ex) [movenet_lightning, movenet_thunder, posenet]",
-                        default="movenet_thunder")
-    parser.add_argument("--save_result", help="input data", default="True")
+                        default="posenet")
+    parser.add_argument("--save_result", help="input data", default="False")
     args = parser.parse_args()
 
     estimation_model = args.model

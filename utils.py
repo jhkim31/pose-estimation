@@ -64,7 +64,7 @@ def visualize(
     list_persons: List[Person],
     keypoint_color: Tuple[int, ...] = None,
     keypoint_threshold: float = 0.05,
-    instance_threshold: float = 0.1,
+    instance_threshold: float = 0.4,
 ) -> np.ndarray:
   """Draws landmarks and edges on the input image and return it.
 
@@ -102,6 +102,7 @@ def visualize(
     for i in range(len(keypoints)):
       if keypoints[i].score >= keypoint_threshold:
         cv2.circle(image, keypoints[i].coordinate, 2, person_color, 4)
+        cv2.putText(image, str(round(keypoints[i].score,3)), keypoints[i].coordinate, fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=1, color=(0, 0, 255), lineType=4)
 
     # Draw all the edges
     for edge_pair, edge_color in KEYPOINT_EDGE_INDS_TO_COLOR.items():

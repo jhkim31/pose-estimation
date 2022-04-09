@@ -23,13 +23,23 @@ KeyPoint(body_part=<BodyPart.RIGHT_ANKLE: 16>, coordinate=Point(x=562, y=690), s
 class MadPT():
     def __init__(self):
         self.state = 0
+        self.side = ""
         self.count = {
             "push_up": 0,
-            "squat": 0
+            "squat": 0,
+            "lunge": 0,
+            "shoulder_press" : 0
         }
         self.max_score = {
             "push_up": 0,
-            "squat": 0
+            "squat": 0,
+            "lunge": 0,
+            "shoulder_press": 0
+        }
+
+        self.init_size = {
+            "right_leg" : 210,
+            "left_leg" : 210
         }
 
     def push_up(self, list_person):
@@ -66,10 +76,105 @@ class MadPT():
                 self.max_score["push_up"] = 0
 
             if arm_angle < 110:
-                if self.max_score["push_up"] < push_up_score:
-                    self.max_score["push_up"] = push_up_score
+                if self.max_score["push_up"] < arm_angle - 80:
+                    self.max_score["push_up"] = arm_angle - 80
 
         return self.max_score["push_up"]
+
+    def squat(self, list_person):
+        body_parts = list_person[0][0]
+        side = "left" if (body_parts[11].score + body_parts[13].score + body_parts[15].score) > \
+                         (body_parts[12].score + body_parts[14].score + body_parts[16].score) else "right"
+
+        observe_point = (11, 13, 15) if side == "left" else (12, 14, 16)
+        if body_parts[observe_point[0]].score + body_parts[observe_point[1]].score + body_parts[observe_point[2]].score > 1:
+            arm_angle = self.calculate_angle(
+                body_parts[observe_point[0]].coordinate,
+                body_parts[observe_point[1]].coordinate,
+                body_parts[observe_point[2]].coordinate
+            )
+
+            if arm_angle < 110 and self.state == 0:
+                self.state = 1
+                print("down")
+
+            if arm_angle > 160 and self.state == 1:
+                self.state = 0
+                print("up")
+                self.count["squat"] += 1
+
+                print(self.count["squat"])
+                if self.max_score["squat"] < 10:
+                    print("bad", self.max_score["squat"])
+                elif self.max_score["squat"] < 20:
+                    print("good", self.max_score["squat"])
+                elif self.max_score["squat"] < 30:
+                    print("great", self.max_score["squat"])
+                else:
+                    print("excellent!!", self.max_score["squat"])
+                self.max_score["squat"] = 0
+
+            if arm_angle < 110:
+                if self.max_score["squat"] < arm_angle - 80:
+                    self.max_score["squat"] = arm_angle - 80
+
+        return self.max_score["squat"]
+
+    def lunge(self, list_person):
+        body_parts = list_person[0][0]
+
+        right_leg = self.calculate_length(body_parts[12].coordinate, body_parts[14].coordinate)
+        left_leg = self.calculate_length(body_parts[11].coordinate, body_parts[13].coordinate)
+
+        if left_leg < self.init_size["left_leg"] * 0.5:
+            self.side = "left"
+            if self.state == 0:
+                print("left down")
+                self.state = 1
+
+        if right_leg < self.init_size["right_leg"] * 0.5:
+            self.side = "right"
+            if self.state == 0:
+                print("right down")
+                self.state = 1
+
+        if self.side == "left" and self.state == 1:
+            if left_leg > self.init_size["left_leg"] * 0.9:
+                self.state = 0
+                print("left up")
+                self.side = ""
+
+        if self.side == "right" and self.state == 1:
+            if right_leg > self.init_size["right_leg"] * 0.9:
+                self.state = 0
+                print("right up")
+                self.side = ""
+
+    def shoulder_press(self, list_person):
+        body_parts = list_person[0][0]
+
+        left_arm_angle = self.calculate_angle(
+            body_parts[5].coordinate,
+            body_parts[7].coordinate,
+            body_parts[9].coordinate
+        )
+
+        right_arm_angle = self.calculate_angle(
+            body_parts[6].coordinate,
+            body_parts[8].coordinate,
+            body_parts[10].coordinate
+        )
+
+        if left_arm_angle < 95 and right_arm_angle < 95 and self.state == 0:
+            self.state = 1
+            print("down")
+        print(left_arm_angle, right_arm_angle)
+        if left_arm_angle > 150 and right_arm_angle > 150 and self.state == 1:
+            self.state = 0
+            print("up")
+            self.count["shoulder_press"] += 1
+
+
 
     def calculate_angle(self, p1, p2, p3):
         vector1 = (p1.x - p2.x, p1.y - p2.y)
@@ -81,3 +186,6 @@ class MadPT():
         )
 
         return theta * (180 / math.pi)
+
+    def calculate_length(self, p1, p2):
+        return math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2)

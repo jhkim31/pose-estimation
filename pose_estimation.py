@@ -74,10 +74,11 @@ def run(
         cv2.imshow(f"{input_type}", total_image)
         save_index += 1
 
-        # fitness_score = hc.push_up(list_persons)
+        fitness_score = hc.shoulder_press(list_persons)
 
     print("terminate!!")
     if save_result:
+        make_save_dir(save_dir)
         post_process.main(save_dir, image_list, body_part_list)
 
 
@@ -87,14 +88,13 @@ def skeleton_pprint(list_persons):
         print(i)
     print()
 
-
 def main():
     print("종료하려면 ESC")
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_type", help="input type ex) [webcam , video , image]", default="image")
-    parser.add_argument("--input_data", help="input data", default='test_data/img2.png')
+    parser.add_argument("--input_type", help="input type ex) [webcam , video , image]", default="video")
+    parser.add_argument("--input_data", help="input data", default='exercise_video/shoulder_press/shoulder_press.mov')
     parser.add_argument("--model", help="choose the model ex) [movenet_lightning, movenet_thunder, posenet]",
-                        default="posenet")
+                        default="movenet_thunder")
     parser.add_argument("--save_result", help="input data", default="False")
     args = parser.parse_args()
 
@@ -110,14 +110,13 @@ def main():
     else:
         save_result = False
 
-    save_dir = make_save_dir()
+    tm = time.gmtime(time.time())
+    save_dir = f'./data/{tm.tm_year}.{tm.tm_mon:02}.{tm.tm_mday:02}T{tm.tm_hour:02}:{tm.tm_min:02}:{tm.tm_sec:02}'
 
     run(estimation_model, input_type, input_data, save_dir, save_result)
 
 
-def make_save_dir():
-    tm = time.gmtime(time.time())
-    save_dir = f'./data/{tm.tm_year}.{tm.tm_mon:02}.{tm.tm_mday:02}T{tm.tm_hour:02}:{tm.tm_min:02}:{tm.tm_sec:02}'
+def make_save_dir(save_dir):
     if not os.path.exists(save_dir):
         image_path = os.path.join(save_dir, "image")
         plot_path = os.path.join(save_dir, "accu_plot")

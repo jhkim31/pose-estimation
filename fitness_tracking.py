@@ -275,36 +275,38 @@ class MadPT():
 
     def lunge(self, list_person):
         body_parts = list_person[0][0]
-        if self.state == 0:
-            if self.init_size['right_leg'] < self.calculate_length(body_parts[12].coordinate, body_parts[14].coordinate):
-                self.init_size['right_leg'] = self.calculate_length(body_parts[12].coordinate, body_parts[14].coordinate)
-            if self.init_size['left_leg'] < self.calculate_length(body_parts[11].coordinate, body_parts[13].coordinate):
-                self.init_size['left_leg'] = self.calculate_length(body_parts[11].coordinate, body_parts[13].coordinate)
-
         min_down_rate = 0.3
-        max_down_rate = 0.7
+        max_down_rate = 0.8
         min_angle = 5
         max_angle = 20
-        right_leg = self.calculate_length(body_parts[12].coordinate, body_parts[14].coordinate)
-        left_leg = self.calculate_length(body_parts[11].coordinate, body_parts[13].coordinate)
         right_angle = 0
         left_angle = 0
+        down_rate = 0
 
-        if left_leg < self.init_size["left_leg"] * max_down_rate and self.state == 0:
+        left_knee_point = body_parts[13].coordinate.y
+        right_knee_point = body_parts[14].coordinate.y
+        left_ankle_point = body_parts[15].coordinate.y
+        right_ankle_point = body_parts[16].coordinate.y
+
+        left_down_rate = (right_knee_point - left_knee_point) / (left_ankle_point - left_knee_point + 1e-5)
+        right_down_rate = (left_knee_point - right_knee_point) / (right_ankle_point - right_knee_point + 1e-5)
+
+        if left_down_rate > min_down_rate and self.state == 0:
             print("left down")
             self.state = 1
             self.side = "left"
 
-        if right_leg < self.init_size["right_leg"] * max_down_rate and self.state == 1:
+        if right_down_rate > min_down_rate and self.state == 0:
             print("right down")
             self.state = 1
             self.side = "right"
 
-        print(self.init_size['left_leg'], self.init_size['right_leg'])
-        print(left_leg, right_leg)
-        down_rate = min(left_leg / self.init_size['left_leg'], right_leg, self.init_size['right_leg'])
+        if self.side == 'left':
+            down_rate = left_down_rate
 
-        print(down_rate)
+        if self.side == 'right':
+            down_rate = right_down_rate
+
         if self.side == 'left':
             left_angle = self.calculate_angle(
                 Point(body_parts[15].coordinate.x, 0),
@@ -329,9 +331,9 @@ class MadPT():
                 body_parts[14].coordinate
             )
 
-        if down_rate < min_down_rate:
+        if down_rate > max_down_rate:
             down_score = 100
-        elif down_rate < max_down_rate:
+        elif down_rate > min_down_rate:
             down_score = int((max_down_rate - down_rate) / (max_down_rate - min_down_rate) * 100)
         else:
             down_score = 0
@@ -359,7 +361,7 @@ class MadPT():
         if self.score['lunge'][2] > left_score:
             self.score['lunge'][2] = left_score
 
-        if down_rate > 0.8 and self.state == 1:
+        if down_rate < 0.2 and self.state == 1:
             self.state = 0
             return_val = self.score['lunge']
             self.score['lunge'] = [0, 100, 100]

@@ -24,7 +24,7 @@ KeyPoint(body_part=<BodyPart.RIGHT_ANKLE: 16>, coordinate=Point(x=562, y=690), s
 '''
 
 
-class P:
+class Point:
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -39,16 +39,16 @@ class MadPT():
             "lunge": 0,
             "shoulder_press": 0
         }
-        self.max_score = {
-            "push_up": [0,0,0,0],
-            "squat": [0, 0, 0],
-            "lunge": 0,
+        self.score = {
+            "push_up": [0, 0, 100, 100],
+            "squat": [0, 100, 100],
+            "lunge": [0, 100, 100],
             "shoulder_press": 0
         }
 
         self.init_size = {
-            "right_leg": 210,
-            "left_leg": 210
+            "right_leg": 1.0,
+            "left_leg": 1.0
         }
 
         self.tmp = 0
@@ -60,16 +60,17 @@ class MadPT():
         score = list_person[0][2]
         body_parts = list_person[0][0]
         score_th = 0.5
-        min_head_angle = 10
-        max_head_angle = 40
+        min_head_angle = 130
+        max_head_angle = 160
         min_arm_angle = 90
         max_arm_angle = 120
-        min_hip_angle = 150
+        min_hip_angle = 130
+        max_hip_angle = 160
         min_depth = 0
         max_depth = 100
 
         body_angle = self.calculate_angle(
-            P(body_parts[15].coordinate.x, 0),
+            Point(body_parts[15].coordinate.x, 0),
             body_parts[15].coordinate,
             body_parts[5].coordinate
         )
@@ -87,17 +88,33 @@ class MadPT():
                 body_parts[10].coordinate
             )
 
-            hip_angle = self.calculate_angle(
+            left_hip_angle = self.calculate_angle(
                 body_parts[5].coordinate,
                 body_parts[11].coordinate,
                 body_parts[13].coordinate
             )
 
-            head_angle = 90 - self.calculate_angle(
+            right_hip_angle = self.calculate_angle(
+                body_parts[6].coordinate,
+                body_parts[12].coordinate,
+                body_parts[14].coordinate
+            )
+
+            hip_angle = (left_hip_angle + right_hip_angle) / 2
+
+            left_head_angle = self.calculate_angle(
                 body_parts[3].coordinate,
                 body_parts[5].coordinate,
-                P(body_parts[5].coordinate.x, 999)
+                body_parts[11].coordinate
             )
+
+            right_head_angle = self.calculate_angle(
+                body_parts[4].coordinate,
+                body_parts[6].coordinate,
+                body_parts[12].coordinate
+            )
+            head_angle = (left_head_angle + right_head_angle) / 2
+            print(head_angle)
 
             depth = body_parts[7].coordinate.y - body_parts[5].coordinate.y
             arm_angle = (left_arm_angle + right_arm_angle) / 2
@@ -116,29 +133,31 @@ class MadPT():
             else:
                 arm_score = 0
 
-            if head_angle < min_head_angle:
+            if head_angle > max_head_angle:
                 head_score = 100
-            elif head_angle < max_head_angle:
+            elif head_angle > min_head_angle:
                 head_score = int((max_head_angle - head_angle) / (max_head_angle - min_head_angle) * 100)
             else:
                 head_score = 0
 
-            if hip_angle > min_hip_angle:
-                hip_score = int((hip_angle - min_hip_angle) / (30) * 100)
+            if hip_angle > max_hip_angle:
+                hip_score = 100
+            elif hip_angle > min_hip_angle:
+                hip_score = int((max_hip_angle - hip_angle) / (max_hip_angle - min_hip_angle) * 100)
             else:
                 hip_score = 0
 
-            if self.max_score['push_up'][0] < depth_score:
-                self.max_score['push_up'][0] = depth_score
+            if self.score['push_up'][0] < depth_score:
+                self.score['push_up'][0] = depth_score
 
-            if self.max_score['push_up'][1] < arm_score:
-                self.max_score['push_up'][1] = arm_score
+            if self.score['push_up'][1] < arm_score:
+                self.score['push_up'][1] = arm_score
 
-            if self.max_score['push_up'][2] < hip_score:
-                self.max_score['push_up'][2] = hip_score
+            if self.score['push_up'][2] > hip_score:
+                self.score['push_up'][2] = hip_score
 
-            if self.max_score['push_up'][3] < head_score:
-                self.max_score['push_up'][3] = head_score
+            if self.score['push_up'][3] > head_score:
+                self.score['push_up'][3] = head_score
 
             if arm_angle < 120 and self.state == 0:
                 self.state = 1
@@ -146,15 +165,12 @@ class MadPT():
             if arm_angle > 160 and self.state == 1:
                 self.state = 0
                 self.count["push_up"] += 1
-                return_val = self.max_score['push_up']
-                self.max_score["push_up"] = [0, 0, 0, 0]
+                return_val = self.score['push_up']
+                self.score["push_up"] = [0, 0, 100, 100]
                 self.tmp = 0
 
                 return return_val
-
-
             return 0
-
 
     def squat(self, list_person):
         score = list_person[0][2]
@@ -178,13 +194,13 @@ class MadPT():
             )
 
             left_calf_angle = self.calculate_angle(
-                P(body_parts[15].coordinate.x, 0),
+                Point(body_parts[15].coordinate.x, 0),
                 body_parts[15].coordinate,
                 body_parts[13].coordinate
             )
 
             left_waist_angle = self.calculate_angle(
-                P(body_parts[11].coordinate.x, 0),
+                Point(body_parts[11].coordinate.x, 0),
                 body_parts[11].coordinate,
                 body_parts[5].coordinate
             )
@@ -196,13 +212,13 @@ class MadPT():
             )
 
             right_calf_angle = self.calculate_angle(
-                P(body_parts[16].coordinate.x, 0),
+                Point(body_parts[16].coordinate.x, 0),
                 body_parts[16].coordinate,
                 body_parts[14].coordinate
             )
 
             right_waist_angle = self.calculate_angle(
-                P(body_parts[12].coordinate.x, 0),
+                Point(body_parts[12].coordinate.x, 0),
                 body_parts[12].coordinate,
                 body_parts[6].coordinate
             )
@@ -234,10 +250,14 @@ class MadPT():
             else:
                 waist_score = 0
 
-            if self.max_score['squat'][0] < thigh_score:
-                self.max_score['squat'][0] = thigh_score
-                self.max_score['squat'][1] = calf_score
-                self.max_score['squat'][2] = waist_score
+            if self.score['squat'][0] < thigh_score:
+                self.score['squat'][0] = thigh_score
+
+            if self.score['squat'][1] > calf_score:
+                self.score['squat'][1] = calf_score
+
+            if self.score['squat'][2] > waist_score:
+                self.score['squat'][2] = waist_score
 
             if left_thigh_angle < max_thigh_angle and self.state == 0:
                 self.state = 1
@@ -245,8 +265,8 @@ class MadPT():
             if left_thigh_angle > 160 and self.state == 1:
                 self.state = 0
                 self.count["squat"] += 1
-                return_val = self.max_score['squat']
-                self.max_score["squat"] = [0, 0, 0]
+                return_val = self.score['squat']
+                self.score["squat"] = [0, 100, 100]
                 self.tmp = 0
 
                 return return_val
@@ -255,33 +275,98 @@ class MadPT():
 
     def lunge(self, list_person):
         body_parts = list_person[0][0]
+        if self.state == 0:
+            if self.init_size['right_leg'] < self.calculate_length(body_parts[12].coordinate, body_parts[14].coordinate):
+                self.init_size['right_leg'] = self.calculate_length(body_parts[12].coordinate, body_parts[14].coordinate)
+            if self.init_size['left_leg'] < self.calculate_length(body_parts[11].coordinate, body_parts[13].coordinate):
+                self.init_size['left_leg'] = self.calculate_length(body_parts[11].coordinate, body_parts[13].coordinate)
 
+        min_down_rate = 0.3
+        max_down_rate = 0.7
+        min_angle = 5
+        max_angle = 20
         right_leg = self.calculate_length(body_parts[12].coordinate, body_parts[14].coordinate)
         left_leg = self.calculate_length(body_parts[11].coordinate, body_parts[13].coordinate)
+        right_angle = 0
+        left_angle = 0
 
-        if left_leg < self.init_size["left_leg"] * 0.5:
+        if left_leg < self.init_size["left_leg"] * max_down_rate and self.state == 0:
+            print("left down")
+            self.state = 1
             self.side = "left"
-            if self.state == 0:
-                print("left down")
-                self.state = 1
 
-        if right_leg < self.init_size["right_leg"] * 0.5:
+        if right_leg < self.init_size["right_leg"] * max_down_rate and self.state == 1:
+            print("right down")
+            self.state = 1
             self.side = "right"
-            if self.state == 0:
-                print("right down")
-                self.state = 1
 
-        if self.side == "left" and self.state == 1:
-            if left_leg > self.init_size["left_leg"] * 0.9:
-                self.state = 0
-                print("left up")
-                self.side = ""
+        print(self.init_size['left_leg'], self.init_size['right_leg'])
+        print(left_leg, right_leg)
+        down_rate = min(left_leg / self.init_size['left_leg'], right_leg, self.init_size['right_leg'])
 
-        if self.side == "right" and self.state == 1:
-            if right_leg > self.init_size["right_leg"] * 0.9:
-                self.state = 0
-                print("right up")
-                self.side = ""
+        print(down_rate)
+        if self.side == 'left':
+            left_angle = self.calculate_angle(
+                Point(body_parts[15].coordinate.x, 0),
+                body_parts[15].coordinate,
+                body_parts[13].coordinate
+            )
+            right_angle = self.calculate_angle(
+                Point(body_parts[14].coordinate.x, 0),
+                body_parts[14].coordinate,
+                body_parts[12].coordinate
+            )
+
+        if self.side == 'right':
+            left_angle = self.calculate_angle(
+                Point(body_parts[13].coordinate.x, 0),
+                body_parts[13].coordinate,
+                body_parts[11].coordinate
+            )
+            right_angle = self.calculate_angle(
+                Point(body_parts[16].coordinate.x, 0),
+                body_parts[16].coordinate,
+                body_parts[14].coordinate
+            )
+
+        if down_rate < min_down_rate:
+            down_score = 100
+        elif down_rate < max_down_rate:
+            down_score = int((max_down_rate - down_rate) / (max_down_rate - min_down_rate) * 100)
+        else:
+            down_score = 0
+
+        if right_angle < min_angle:
+            right_score = 100
+        elif right_angle < max_angle:
+            right_score = int((max_angle - right_angle) / (max_angle - min_angle) * 100)
+        else:
+            right_score = 0
+
+        if left_angle < min_angle:
+            left_score = 100
+        elif left_angle < max_angle:
+            left_score = int((max_angle - left_angle) / (max_angle - min_angle) * 100)
+        else:
+            left_score = 0
+
+        if self.score['lunge'][0] < down_score:
+            self.score['lunge'][0] = down_score
+
+        if self.score['lunge'][1] > right_score:
+            self.score['lunge'][1] = right_score
+
+        if self.score['lunge'][2] > left_score:
+            self.score['lunge'][2] = left_score
+
+        if down_rate > 0.8 and self.state == 1:
+            self.state = 0
+            return_val = self.score['lunge']
+            self.score['lunge'] = [0, 100, 100]
+            self.side = ""
+            return return_val
+
+        return 0
 
     def shoulder_press(self, list_person):
         body_parts = list_person[0][0]

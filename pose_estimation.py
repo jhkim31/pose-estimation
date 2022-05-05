@@ -74,7 +74,9 @@ def run(
         cv2.imshow(f"{input_type}", total_image)
         save_index += 1
 
-        fitness_score = hc.shoulder_press(list_persons)
+        fitness_score = hc.squat(list_persons)
+        if fitness_score != 0:
+            print(fitness_score)
 
     print("terminate!!")
     if save_result:
@@ -92,7 +94,7 @@ def main():
     print("종료하려면 ESC")
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_type", help="input type ex) [webcam , video , image]", default="video")
-    parser.add_argument("--input_data", help="input data", default='exercise_video/shoulder_press/shoulder_press.mov')
+    parser.add_argument("--input_data", help="input data", default='exercise_video/squat/squat.mov')
     parser.add_argument("--model", help="choose the model ex) [movenet_lightning, movenet_thunder, posenet]",
                         default="movenet_thunder")
     parser.add_argument("--save_result", help="input data", default="False")

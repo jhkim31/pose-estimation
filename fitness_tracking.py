@@ -1,5 +1,8 @@
 import math
 from pprint import pprint
+
+from data import BodyPart
+
 '''
 KeyPoint(body_part=<BodyPart.NOSE: 0>, coordinate=Point(x=657, y=380), score=0.5295743)
 KeyPoint(body_part=<BodyPart.LEFT_EYE: 1>, coordinate=Point(x=717, y=306), score=0.71167743)
@@ -20,6 +23,12 @@ KeyPoint(body_part=<BodyPart.LEFT_ANKLE: 15>, coordinate=Point(x=579, y=701), sc
 KeyPoint(body_part=<BodyPart.RIGHT_ANKLE: 16>, coordinate=Point(x=562, y=690), score=0.035004675)
 '''
 
+
+class P:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
 class MadPT():
     def __init__(self):
         self.state = 0
@@ -28,151 +37,216 @@ class MadPT():
             "push_up": 0,
             "squat": 0,
             "lunge": 0,
-            "shoulder_press" : 0
+            "shoulder_press": 0
         }
         self.max_score = {
-            "push_up": 0,
-            "squat": [0,0,0],
+            "push_up": [0,0,0,0],
+            "squat": [0, 0, 0],
             "lunge": 0,
             "shoulder_press": 0
         }
 
         self.init_size = {
-            "right_leg" : 210,
-            "left_leg" : 210
+            "right_leg": 210,
+            "left_leg": 210
         }
 
         self.tmp = 0
         self.tmp2 = 0
         self.tmp3 = 0
-    def push_up(self, list_person):
-        body_parts = list_person[0][0]
 
-        side = "left" if (body_parts[5].score + body_parts[7].score + body_parts[9].score) > \
-                         (body_parts[6].score + body_parts[8].score + body_parts[10].score) else "right"
-        
-        #condition check
-        observe_point = (5,7,9) if side == "left" else (6,8,10)
-        if body_parts[observe_point[0]].score + body_parts[observe_point[1]].score + body_parts[observe_point[2]].score > 1:
-            angle = self.calculate_angle(
-                body_parts[observe_point[0]].coordinate,
-                body_parts[observe_point[1]].coordinate,
-                body_parts[observe_point[2]].coordinate
+    def push_up(self, list_person):
+
+        score = list_person[0][2]
+        body_parts = list_person[0][0]
+        score_th = 0.5
+        min_head_angle = 10
+        max_head_angle = 40
+        min_arm_angle = 90
+        max_arm_angle = 120
+        min_hip_angle = 150
+        min_depth = 0
+        max_depth = 100
+
+        body_angle = self.calculate_angle(
+            P(body_parts[15].coordinate.x, 0),
+            body_parts[15].coordinate,
+            body_parts[5].coordinate
+        )
+
+        if score > score_th and body_angle > 45:
+            left_arm_angle = self.calculate_angle(
+                body_parts[5].coordinate,
+                body_parts[7].coordinate,
+                body_parts[9].coordinate
             )
 
-            if angle < 110 and self.state == 0:
+            right_arm_angle = self.calculate_angle(
+                body_parts[6].coordinate,
+                body_parts[8].coordinate,
+                body_parts[10].coordinate
+            )
+
+            hip_angle = self.calculate_angle(
+                body_parts[5].coordinate,
+                body_parts[11].coordinate,
+                body_parts[13].coordinate
+            )
+
+            head_angle = 90 - self.calculate_angle(
+                body_parts[3].coordinate,
+                body_parts[5].coordinate,
+                P(body_parts[5].coordinate.x, 999)
+            )
+
+            depth = body_parts[7].coordinate.y - body_parts[5].coordinate.y
+            arm_angle = (left_arm_angle + right_arm_angle) / 2
+
+            if depth < min_depth:
+                depth_score = 100
+            elif depth < max_depth:
+                depth_score = int((max_depth - depth) / (max_depth - min_depth) * 100)
+            else:
+                depth_score = 0
+
+            if arm_angle < min_arm_angle:
+                arm_score = 100
+            elif arm_angle < max_arm_angle:
+                arm_score = int((max_arm_angle - arm_angle) / (max_arm_angle - min_arm_angle) * 100)
+            else:
+                arm_score = 0
+
+            if head_angle < min_head_angle:
+                head_score = 100
+            elif head_angle < max_head_angle:
+                head_score = int((max_head_angle - head_angle) / (max_head_angle - min_head_angle) * 100)
+            else:
+                head_score = 0
+
+            if hip_angle > min_hip_angle:
+                hip_score = int((hip_angle - min_hip_angle) / (30) * 100)
+            else:
+                hip_score = 0
+
+            if self.max_score['push_up'][0] < depth_score:
+                self.max_score['push_up'][0] = depth_score
+
+            if self.max_score['push_up'][1] < arm_score:
+                self.max_score['push_up'][1] = arm_score
+
+            if self.max_score['push_up'][2] < hip_score:
+                self.max_score['push_up'][2] = hip_score
+
+            if self.max_score['push_up'][3] < head_score:
+                self.max_score['push_up'][3] = head_score
+
+            if arm_angle < 120 and self.state == 0:
                 self.state = 1
-                print("down")
 
-            if angle > 160 and self.state == 1:
+            if arm_angle > 160 and self.state == 1:
                 self.state = 0
-                print("up")
                 self.count["push_up"] += 1
-                print(self.count["push_up"])
-                
-                if self.max_score["push_up"] < 10:
-                    print("bad")
-                    
-                elif self.max_score["push_up"] < 20:
-                    print("good")
-                elif self.max_score["push_up"] < 30:
-                    print("great")
-                else:
-                    print("excellent!!")
-                self.max_score["push_up"] = 0
+                return_val = self.max_score['push_up']
+                self.max_score["push_up"] = [0, 0, 0, 0]
+                self.tmp = 0
 
-            if angle < 110:
-                if self.max_score["push_up"] < angle - 80:
-                    self.max_score["push_up"] = angle - 80
+                return return_val
 
-        return self.max_score["push_up"]
+
+            return 0
+
 
     def squat(self, list_person):
         score = list_person[0][2]
-        min_thigh_angle = 75        # 무릎 각도 (이거보다 작으면 최소점수)
-        max_thigh_angle = 110       # 인식을 하는 최소 무릎 각도 (이거 이하부터 점수 계산)
-        min_calf_angle = 20         # 지면에 수직인 벡터와 종아리의 각도의 최소값 (즉 가장 적게 튀어나간)
-        max_calf_angle = 35         # 지면에 수직인 벡터와 종아리의 각도의 최대값 (이거보다 더 많이 튀어나가면 0)
-        min_waist_angle = 5
-        max_waist_angle = 30
         body_parts = list_person[0][0]
-        side = "left" if (body_parts[11].score + body_parts[13].score + body_parts[15].score) > \
-                         (body_parts[12].score + body_parts[14].score + body_parts[16].score) else "right"
+        min_thigh_angle = 75  # 무릎 각도 (이거보다 작으면 최소점수)
+        max_thigh_angle = 110  # 인식을 하는 최소 무릎 각도 (이거 이하부터 점수 계산)
+        min_calf_angle = 20  # 지면에 수직인 벡터와 종아리 각도의 최소값 (즉 가장 적게 튀어나간)
+        max_calf_angle = 35  # 지면에 수직인 벡터와 종아리 각도의 최대값 (이거보다 더 많이 튀어나가면 0)
+        min_waist_angle = 40 # 지면에 수직인 벡터와 허리 각도의 최소값
+        max_waist_angle = 60 # 지면에 수직인 벡터와 허리 각도의 최대값
+        weighted_sum = [0.5, 0.35, 0.15]
+        score_th = 0.5
 
-        observe_point = (11, 13, 15, 5) if side == "left" else (12, 14, 16, 6)
-        class P():
-            def __init__(self, x, y):
-                self.x = x
-                self.y = y
 
-        if body_parts[observe_point[0]].score + \
-                body_parts[observe_point[1]].score + \
-                body_parts[observe_point[2]].score > 1.5:
+        if score > score_th:
 
-            thigh_angle = self.calculate_angle(
-                body_parts[observe_point[0]].coordinate,
-                body_parts[observe_point[1]].coordinate,
-                body_parts[observe_point[2]].coordinate,
+            left_thigh_angle = self.calculate_angle(
+                body_parts[11].coordinate,
+                body_parts[13].coordinate,
+                body_parts[15].coordinate,
             )
 
-            calf_angle = self.calculate_angle(
-                P(body_parts[observe_point[2]].coordinate.x, 0),
-                body_parts[observe_point[2]].coordinate,
-                body_parts[observe_point[1]].coordinate
+            left_calf_angle = self.calculate_angle(
+                P(body_parts[15].coordinate.x, 0),
+                body_parts[15].coordinate,
+                body_parts[13].coordinate
             )
 
-            waist_angle = self.calculate_angle(
-                P(body_parts[observe_point[0]].coordinate.x, 0),
-                body_parts[observe_point[0]].coordinate,
-                body_parts[observe_point[3]].coordinate
+            left_waist_angle = self.calculate_angle(
+                P(body_parts[11].coordinate.x, 0),
+                body_parts[11].coordinate,
+                body_parts[5].coordinate
             )
-            print(waist_angle)
 
+            right_thigh_angle = self.calculate_angle(
+                body_parts[12].coordinate,
+                body_parts[14].coordinate,
+                body_parts[16].coordinate,
+            )
+
+            right_calf_angle = self.calculate_angle(
+                P(body_parts[16].coordinate.x, 0),
+                body_parts[16].coordinate,
+                body_parts[14].coordinate
+            )
+
+            right_waist_angle = self.calculate_angle(
+                P(body_parts[12].coordinate.x, 0),
+                body_parts[12].coordinate,
+                body_parts[6].coordinate
+            )
+
+            thigh_angle = (left_thigh_angle + right_thigh_angle) / 2
+            calf_angle = (left_calf_angle + right_calf_angle) / 2
+            waist_angle = (left_waist_angle + right_waist_angle) / 2
+
+            # 깊이를 측정하는 점수 (깊을수록 높음)
             if thigh_angle < min_thigh_angle:
-                thigh_score = 1
+                thigh_score = 100
             elif thigh_angle < max_thigh_angle:
-                thigh_score = (max_thigh_angle - thigh_angle) / (max_thigh_angle - min_thigh_angle)
+                thigh_score = int((max_thigh_angle - thigh_angle) / (max_thigh_angle - min_thigh_angle) * 100)
             else:
                 thigh_score = 0
-
+            # 무릎의 튀어나감을 측정하는 점수 (안튀어나갈수록 높음)
             if calf_angle < min_calf_angle:
-                calf_score = 1
+                calf_score = 100
             elif calf_angle < max_calf_angle:
-                calf_score = (max_calf_angle - calf_angle) / (max_calf_angle - min_calf_angle)
+                calf_score = int((max_calf_angle - calf_angle) / (max_calf_angle - min_calf_angle) * 100)
             else:
                 calf_score = 0
 
-            # print("thigh_angle : ", thigh_angle)
-            # print("calf_angle : ", calf_angle)
-            # print("thigh_score : ", thigh_score)
-            # print("calf_score : ", calf_score)
-            # print()
+            # 허리의 각도를 측정하는 점수 (세울수록 높음)
+            if waist_angle < min_waist_angle:
+                waist_score = 100
+            elif waist_angle < max_waist_angle:
+                waist_score = int((max_waist_angle - waist_angle) / (max_waist_angle - min_waist_angle) * 100)
+            else:
+                waist_score = 0
 
             if self.max_score['squat'][0] < thigh_score:
                 self.max_score['squat'][0] = thigh_score
                 self.max_score['squat'][1] = calf_score
+                self.max_score['squat'][2] = waist_score
 
-
-            if thigh_angle < max_thigh_angle and self.state == 0:
+            if left_thigh_angle < max_thigh_angle and self.state == 0:
                 self.state = 1
-                print("down")
 
-            if thigh_angle > 160 and self.state == 1:
+            if left_thigh_angle > 160 and self.state == 1:
                 self.state = 0
-                print("up")
                 self.count["squat"] += 1
                 return_val = self.max_score['squat']
-                # print(self.count["squat"])
-                # if self.max_score["squat"] < 10:
-                #     print("bad", self.max_score["squat"], self.tmp)
-                # elif self.max_score["squat"] < 20:
-                #     print("good", self.max_score["squat"], self.tmp)
-                # elif self.max_score["squat"] < 30:
-                #     print("great", self.max_score["squat"], self.tmp)
-                # else:
-                #     print("excellent", self.max_score["squat"], self.tmp)
-                #
-                self.max_score["squat"] = [0,0,0]
+                self.max_score["squat"] = [0, 0, 0]
                 self.tmp = 0
 
                 return return_val
@@ -232,8 +306,6 @@ class MadPT():
             self.state = 0
             print("up")
             self.count["shoulder_press"] += 1
-
-
 
     def calculate_angle(self, p1, p2, p3):
         vector1 = (p1.x - p2.x, p1.y - p2.y)

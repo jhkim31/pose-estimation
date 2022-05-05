@@ -3,6 +3,8 @@ import os
 from jh_pbar import jh_pbar
 import cv2
 
+from data import BodyPart
+
 '''
 KeyPoint(body_part=<BodyPart.NOSE: 0>, coordinate=Point(x=657, y=380), score=0.5295743)
 KeyPoint(body_part=<BodyPart.LEFT_EYE: 1>, coordinate=Point(x=717, y=306), score=0.71167743)
@@ -22,14 +24,21 @@ KeyPoint(body_part=<BodyPart.RIGHT_KNEE: 14>, coordinate=Point(x=285, y=700), sc
 KeyPoint(body_part=<BodyPart.LEFT_ANKLE: 15>, coordinate=Point(x=579, y=701), score=0.018676013)
 KeyPoint(body_part=<BodyPart.RIGHT_ANKLE: 16>, coordinate=Point(x=562, y=690), score=0.035004675)
 '''
-plot_x_data = ["nose", "L_eye", "R_eye", "L_ear", "R_ear", "L_shoulder", "R_shoulder", "L_elbow", "R_elbow",
-                   "L_wrist", "R_wrist", "L_hip", "R_hip", "L_knee", "R_knee", "L_ankle", "R_ankle"]
+plot_x_data = ["nose", "L_eye", "L_ear", "L_shoulder", "L_elbow", "L_wrist", "L_hip", "L_knee", "L_ankle",
+               "R_eye",  "R_ear",  "R_shoulder",  "R_elbow", "R_wrist", "R_hip", "R_knee", "R_ankle"]
 
+left_data = [BodyPart.NOSE, BodyPart.LEFT_EAR, BodyPart.LEFT_EYE, BodyPart.LEFT_HIP, BodyPart.LEFT_ELBOW, BodyPart.LEFT_KNEE, BodyPart.LEFT_ANKLE, BodyPart.LEFT_SHOULDER, BodyPart.LEFT_WRIST]
 def make_plot(list_persons, save_dir, index):
     persons = list_persons[0][0]
     plot_data = []
+
     for idx, i in enumerate(persons):
-        plot_data.append(i.score)
+        if i.body_part in left_data:
+            plot_data.append(i.score)
+    for idx, i in enumerate(persons[1:]):
+        if i.body_part not in left_data:
+            plot_data.append(i.score)
+
     
     fig = plt.figure(figsize=(20,6))
     ax1 = fig.add_subplot()

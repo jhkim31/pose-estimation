@@ -43,7 +43,7 @@ class MadPT():
             "push_up": [0, 0, 100, 100],
             "squat": [0, 100, 100],
             "lunge": [0, 100, 100],
-            "shoulder_press": 0
+            "shoulder_press": [100, 100, 0, 0]
         }
 
         self.init_size = {
@@ -371,28 +371,84 @@ class MadPT():
         return 0
 
     def shoulder_press(self, list_person):
+        min_angle = 75
+        max_angle = 100
+        min_vertical_angle = 20
+        max_vertical_angle = 40
         body_parts = list_person[0][0]
 
-        left_angle = self.calculate_angle(
+        left_arm_angle = self.calculate_angle(
+            Point(body_parts[7].coordinate.x, 0),
+            body_parts[7].coordinate,
+            body_parts[9].coordinate
+        )
+        right_arm_angle = self.calculate_angle(
+            Point(body_parts[6].coordinate.x, 0),
+            body_parts[8].coordinate,
+            body_parts[10].coordinate
+        )
+
+        left_elbow_angle = self.calculate_angle(
             body_parts[5].coordinate,
             body_parts[7].coordinate,
             body_parts[9].coordinate
         )
 
-        right_angle = self.calculate_angle(
+        right_elbow_angle = self.calculate_angle(
             body_parts[6].coordinate,
             body_parts[8].coordinate,
             body_parts[10].coordinate
         )
+        if left_arm_angle < min_vertical_angle:
+            left_arm_score = 100
+        elif left_arm_angle < max_vertical_angle:
+            left_arm_score = int((max_vertical_angle - left_arm_angle) / (max_vertical_angle - min_vertical_angle) * 100)
+        else:
+            left_arm_score = 0
 
-        if left_angle < 95 and right_angle < 95 and self.state == 0:
+        if right_arm_angle < min_vertical_angle:
+            right_arm_score = 100
+        elif right_arm_angle < max_vertical_angle:
+            right_arm_score = int((max_vertical_angle - right_arm_angle) / (max_vertical_angle - min_vertical_angle) * 100)
+        else:
+            right_arm_score = 0
+
+        if left_elbow_angle < min_angle:
+            left_elbow_score = 100
+        elif left_elbow_angle < max_angle:
+            left_elbow_score = int((max_angle - left_elbow_angle) / (max_angle - min_angle) * 100)
+        else:
+            left_elbow_score = 0
+
+        if right_elbow_angle < min_angle:
+            right_elbow_score = 100
+        elif right_elbow_angle < max_angle:
+            right_elbow_score = int((max_angle - right_elbow_angle) / (max_angle - min_angle) * 100)
+        else:
+            right_elbow_score = 0
+
+        if self.score['shoulder_press'][0] > left_arm_score:
+            self.score['shoulder_press'][0] = left_arm_score
+
+        if self.score['shoulder_press'][1] > right_arm_score:
+            self.score['shoulder_press'][1] = right_arm_score
+
+        if self.score['shoulder_press'][2] < left_elbow_score:
+            self.score['shoulder_press'][2] = left_elbow_score
+
+        if self.score['shoulder_press'][3] < right_elbow_score:
+            self.score['shoulder_press'][3] = right_elbow_score
+
+        # print(left_arm_angle, right_arm_angle)
+        if left_elbow_angle > 140 and right_elbow_angle > 140 and self.state == 0:
             self.state = 1
-            print("down")
-        print(left_angle, right_angle)
-        if left_angle > 150 and right_angle > 150 and self.state == 1:
+
+        if left_elbow_angle < 90 and right_elbow_angle < 90 and self.state == 1:
             self.state = 0
-            print("up")
-            self.count["shoulder_press"] += 1
+            return_val = self.score['shoulder_press']
+            self.score['shoulder_press'] = [100, 100, 0, 0]
+            return return_val
+        return 0
 
     def calculate_angle(self, p1, p2, p3):
         vector1 = (p1.x - p2.x, p1.y - p2.y)
